@@ -8,7 +8,7 @@ import (
 	"github.com/ernyoke/imger/threshold"
 )
 
-func main() {
+func convertPageImgToArrayOfBinaryLetters() {
 	path := "ImgData/SamplePdfScreenshot1.png"
 
 	img, err := imgio.ImreadGray(path)
