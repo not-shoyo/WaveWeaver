@@ -54,12 +54,37 @@ func main() {
 	fmt.Printf("b1Dim: (%v, %v)\n", len(b1), len(b1[0]))
 	fmt.Printf("b2Dim: (%v, %v)\n", len(b2), len(b2[0]))
 
-	numIterations := 1
+	numIterations, alpha := 1, 0.3
 	for itr := 0; itr < numIterations; itr++ {
-		// _, A2 := feedForward(xTranspose, W1, W2, b1, b2)
-		// calcErrors(yOneHot, A2)
+		A1, A2, Z1, _ := feedForward(xTranspose, W1, W2, b1, b2)
+		dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
+		W1, W2, b1, b2 = updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1, alpha)
 	}
 
+}
+
+func updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1 [][]float64, alpha float64) ([][]float64, [][]float64, [][]float64, [][]float64) {
+	newW1 := subtactMatrices(W1, multipyMatrixBy(dW1, alpha))
+	newW2 := subtactMatrices(W2, multipyMatrixBy(dW2, alpha))
+	newb1 := subtactMatrices(b1, multipyMatrixBy(dB1, alpha))
+	newb2 := subtactMatrices(b2, multipyMatrixBy(dB2, alpha))
+
+	return newW1, newW2, newb1, newb2
+}
+
+func multipyMatrixBy(A [][]float64, alpha float64) [][]float64 {
+	mA, nA := len(A), len(A[0])
+
+	resultMatrix := [][]float64{}
+	for i := 0; i < mA; i++ {
+		resultRow := []float64{}
+		for j := 0; j < nA; j++ {
+			resultRow = append(resultRow, A[i][j]*alpha)
+		}
+		resultMatrix = append(resultMatrix, resultRow)
+	}
+
+	return resultMatrix
 }
 
 func initialize(n, m, l1, l2 int) ([][]float64, [][]float64, [][]float64, [][]float64) {
@@ -101,19 +126,130 @@ func initialize(n, m, l1, l2 int) ([][]float64, [][]float64, [][]float64, [][]fl
 	return W1, W2, b1, b2
 }
 
-func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2 [][]float64) {
-	Z1 := addMatrices(dotProduct(W1, X), b1)
+func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
+	Z1 = addMatrices(crossProduct(W1, X), b1)
 	A1 = activateNeurons(Z1, "reLU")
-	Z2 := addMatrices(dotProduct(W2, A1), b2)
+	Z2 = addMatrices(crossProduct(W2, A1), b2)
 	A2 = activateNeurons(Z2, "softmax")
+
+	fmt.Printf("feedForward - Z1Dim: (%v, %v)\n", len(Z1), len(Z1[0]))
+	fmt.Printf("feedForward - A1Dim: (%v, %v)\n", len(A1), len(A1[0]))
+	fmt.Printf("feedForward - Z2Dim: (%v, %v)\n", len(Z2), len(Z2[0]))
+	fmt.Printf("feedForward - A2Dim: (%v, %v)\n", len(A2), len(A2[0]))
+
 	return
 }
 
-// func calcErrors(Y, A2 [][]float64) [][]float64 {
-// 	cost := subtactMatrices(Y, A2)
+func calcErrors(Y, A2, A1, Z1, X [][]float64) ([][]float64, [][]float64, [][]float64, [][]float64) {
+	m := len(Y[0])
 
-// 	return cost
-// }
+	dZ2 := subtactMatrices(A2, Y)
+
+	fmt.Printf("calcErrors - dZ2Dim: (%v, %v)\n", len(dZ2), len(dZ2[0]))
+
+	dW2 := crossProduct(dZ2, transposeMatrice(A1))
+	dW2 = divideMatrixBy(dW2, float64(m))
+
+	fmt.Printf("calcErrors - dW2Dim: (%v, %v)\n", len(dW2), len(dW2[0]))
+
+	dB2 := addUpRows(dZ2)
+	dB2 = divideMatrixBy(dB2, float64(m))
+	dB2 = expandMatrix(dB2, m)
+
+	fmt.Printf("calcErrors - dB2Dim: (%v, %v)\n", len(dB2), len(dB2[0]))
+
+	gZ1 := undoActivationReLU(Z1)
+
+	fmt.Printf("calcErrors - gZ1Dim: (%v, %v)\n", len(gZ1), len(gZ1[0]))
+
+	dZ1 := dotProduct(crossProduct(transposeMatrice(dW2), dZ2), gZ1)
+
+	fmt.Printf("calcErrors - dZ1Dim: (%v, %v)\n", len(dZ1), len(dZ1[0]))
+
+	dW1 := crossProduct(dZ1, transposeMatrice(X))
+	dW1 = divideMatrixBy(dW1, float64(m))
+
+	fmt.Printf("calcErrors - dW1Dim: (%v, %v)\n", len(dW1), len(dW1[0]))
+
+	dB1 := addUpRows(dZ1)
+	dB1 = divideMatrixBy(dB1, float64(m))
+	dB1 = expandMatrix(dB1, m)
+
+	fmt.Printf("calcErrors - dB1Dim: (%v, %v)\n", len(dB1), len(dB1[0]))
+
+	return dW2, dB2, dW1, dB1
+}
+
+func expandMatrix(A [][]float64, numCols int) [][]float64 {
+	m := len(A)
+	returnMatrix := [][]float64{}
+
+	for i := 0; i < m; i++ {
+		value := A[i][0]
+		newRow := []float64{}
+		for j := 0; j < numCols; j++ {
+			newRow = append(newRow, value)
+		}
+		returnMatrix = append(returnMatrix, newRow)
+	}
+
+	return returnMatrix
+}
+
+func dotProduct(A, B [][]float64) [][]float64 {
+	mA, nA, mB, nB := len(A), len(A[0]), len(B), len(B[0])
+
+	if mA != mB || nA != nB {
+		errDim := errors.New("Illegal Operation: Matrix Dot Product not possible due to dimentions")
+		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
+		panic(errDim)
+	}
+
+	resultMatrix := [][]float64{}
+	for i := 0; i < mA; i++ {
+		resultRow := []float64{}
+		for j := 0; j < nB; j++ {
+			resultRow = append(resultRow, A[i][j]*B[i][j])
+		}
+		resultMatrix = append(resultMatrix, resultRow)
+	}
+
+	return resultMatrix
+}
+
+func undoActivationReLU(A [][]float64) [][]float64 {
+	mA, nA := len(A), len(A[0])
+
+	resultMatrix := [][]float64{}
+	for i := 0; i < mA; i++ {
+		resultRow := []float64{}
+		for j := 0; j < nA; j++ {
+			derivative := 0.0
+			if A[i][j] > 0 {
+				derivative = 1.0
+			}
+			resultRow = append(resultRow, derivative)
+		}
+		resultMatrix = append(resultMatrix, resultRow)
+	}
+
+	return resultMatrix
+}
+
+func addUpRows(A [][]float64) [][]float64 {
+	mA, nA := len(A), len(A[0])
+
+	resultMatrix := [][]float64{}
+	for i := 0; i < mA; i++ {
+		sum := 0.0
+		for j := 0; j < nA; j++ {
+			sum += A[i][j]
+		}
+		resultMatrix = append(resultMatrix, []float64{sum})
+	}
+
+	return resultMatrix
+}
 
 func activateNeurons(Z [][]float64, activationName string) [][]float64 {
 	mZ, nZ := len(Z), len(Z[0])
@@ -148,19 +284,34 @@ func activateNeurons(Z [][]float64, activationName string) [][]float64 {
 
 	default:
 		errActivation := errors.New("Illegal Activation Function")
-		fmt.Printf("errActivation.Error(): %v\n | activationName %v", errActivation.Error(), activationName)
+		fmt.Printf("errActivation.Error(): %v | activationName %v\n", errActivation.Error(), activationName)
 		panic(errActivation)
 	}
 
 	return activatedNeurons
 }
 
-func dotProduct(A, B [][]float64) [][]float64 {
+func divideMatrixBy(A [][]float64, denominator float64) [][]float64 {
+	mA, nA := len(A), len(A[0])
+
+	resultMatrix := [][]float64{}
+	for i := 0; i < mA; i++ {
+		resultRow := []float64{}
+		for j := 0; j < nA; j++ {
+			resultRow = append(resultRow, A[i][j]/denominator)
+		}
+		resultMatrix = append(resultMatrix, resultRow)
+	}
+
+	return resultMatrix
+}
+
+func crossProduct(A, B [][]float64) [][]float64 {
 	mA, nA, mB, nB := len(A), len(A[0]), len(B), len(B[0])
 
 	if nA != mB {
 		errDim := errors.New("Illegal Operation: Dot Product not possible due to dimentions")
-		fmt.Printf("errDim.Error(): %v\n | mA: %v nA: %v mB: %v nB: %v", errDim.Error(), mA, nA, mB, nB)
+		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
 
@@ -185,7 +336,7 @@ func addMatrices(A, B [][]float64) [][]float64 {
 
 	if mA != mB || nA != nB {
 		errDim := errors.New("Illegal Operation: Matrix Addition not possible due to dimentions")
-		fmt.Printf("errDim.Error(): %v\n | mA: %v nA: %v mB: %v nB: %v", errDim.Error(), mA, nA, mB, nB)
+		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
 
@@ -206,7 +357,7 @@ func subtactMatrices(A, B [][]float64) [][]float64 {
 
 	if mA != mB || nA != nB {
 		errDim := errors.New("Illegal Operation: Matrix Subtraction not possible due to dimentions")
-		fmt.Printf("errDim.Error(): %v\n | mA: %v nA: %v mB: %v nB: %v", errDim.Error(), mA, nA, mB, nB)
+		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
 
