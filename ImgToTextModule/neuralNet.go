@@ -54,6 +54,8 @@ func main() {
 
 	if numRecords != -1 {
 		allRecords = allRecords[:numRecords]
+	} else {
+		numRecords = len(allRecords)
 	}
 
 	totalTrainingM, totalTrainingN := len(allRecords), len(allRecords[0])-1
@@ -132,12 +134,14 @@ func main() {
 	testOutput := convertToOneHot([]float64{testYs[testIndex]})
 
 	bias1 := [][]float64{}
-	bias1 = append(bias1, transposeMatrice(b1)[testIndex])
-	bias1 = transposeMatrice(bias1)
+	// bias1 = append(bias1, transposeMatrice(b1)[testIndex])
+	// bias1 = transposeMatrice(bias1)
+	bias1 = divideMatrixBy(addUpRows(b1), float64(numRecords))
 
 	bias2 := [][]float64{}
-	bias2 = append(bias2, transposeMatrice(b2)[testIndex])
-	bias2 = transposeMatrice(bias2)
+	// bias2 = append(bias2, transposeMatrice(b2)[testIndex])
+	// bias2 = transposeMatrice(bias2)
+	bias2 = divideMatrixBy(addUpRows(b2), float64(numRecords))
 
 	A1, A2, Z1, _ := feedForward(testInput, W1, W2, bias1, bias2)
 	dZ2, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)

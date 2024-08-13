@@ -1,4 +1,5 @@
 AudioData/
 ImgToTextModule/ImgData/
 ImgToTextModule/MnistTrainingData/
+ImgToTextModule/NeuralNetOutputs/
 TestPackage/
