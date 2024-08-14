@@ -13,7 +13,7 @@ import (
 func main() {
 	// file, errOs := os.Open("MnistTrainingData/emnist-byclass-train.csv")
 
-	cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords := os.Args[1], os.Args[2], os.Args[3]
+	cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
 
 	numIterations, errAtoiNumIterations := strconv.Atoi(cmdLineNumItrs)
 	if errAtoiNumIterations != nil {
@@ -33,7 +33,13 @@ func main() {
 		panic(errAtoiNumRecords)
 	}
 
-	fmt.Printf("numIterations: %v, alpha: %v, numRecords: %v\n", numIterations, alpha, numRecords)
+	numTestRecords, errAtoiNumTestRecords := strconv.Atoi(cmdLineNumTestRecords)
+	if errAtoiNumTestRecords != nil {
+		fmt.Printf("errAToINumTestRecords.Error(): %v\n", errAtoiNumTestRecords.Error())
+		panic(errAtoiNumTestRecords)
+	}
+
+	fmt.Printf("numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v\n", numIterations, alpha, numRecords, numTestRecords)
 
 	file, errOs := os.Open("MnistTrainingData/emnist-digits-train.csv")
 	if errOs != nil {
@@ -123,7 +129,11 @@ func main() {
 
 	// testIndex := 0
 
-	numTestRecords := len(testRecords)
+	if numRecords != -1 {
+		testRecords = testRecords[:numTestRecords]
+	} else {
+		numTestRecords = len(testRecords)
+	}
 
 	// fmt.Printf("testRecords[testIndex]: %v\n", testRecords[testIndex])
 
