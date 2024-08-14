@@ -121,27 +121,33 @@ func main() {
 		panic(errRead)
 	}
 
-	testIndex := 0
+	// testIndex := 0
 
-	fmt.Printf("testRecords[testIndex]: %v\n", testRecords[testIndex])
+	numTestRecords := len(testRecords)
+
+	// fmt.Printf("testRecords[testIndex]: %v\n", testRecords[testIndex])
 
 	testYs, testXs := extractToIntSlices(testRecords)
 
-	testInput := [][]float64{}
-	testInput = append(testInput, testXs[testIndex])
-	testInput = transposeMatrice(testInput)
+	// testInput := [][]float64{}
+	// testInput = append(testInput, testXs[testIndex])
+	// testInput = transposeMatrice(testInput)
 
-	testOutput := convertToOneHot([]float64{testYs[testIndex]})
+	// testOutput := convertToOneHot([]float64{testYs[testIndex]})
 
-	bias1 := [][]float64{}
+	testInput := normalizeMatrix(transposeMatrice(testXs))
+
+	testOutput := convertToOneHot(testYs)
+
+	// bias1 := [][]float64{}
 	// bias1 = append(bias1, transposeMatrice(b1)[testIndex])
 	// bias1 = transposeMatrice(bias1)
-	bias1 = divideMatrixBy(addUpRows(b1), float64(numRecords))
+	bias1 := expandMatrix(divideMatrixBy(addUpRows(b1), float64(numRecords)), numTestRecords)
 
-	bias2 := [][]float64{}
+	// bias2 := [][]float64{}
 	// bias2 = append(bias2, transposeMatrice(b2)[testIndex])
 	// bias2 = transposeMatrice(bias2)
-	bias2 = divideMatrixBy(addUpRows(b2), float64(numRecords))
+	bias2 := expandMatrix(divideMatrixBy(addUpRows(b2), float64(numRecords)), numTestRecords)
 
 	A1, A2, Z1, _ := feedForward(testInput, W1, W2, bias1, bias2)
 	dZ2, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
