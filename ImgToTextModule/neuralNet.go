@@ -13,7 +13,7 @@ import (
 func main() {
 	// file, errOs := os.Open("MnistTrainingData/emnist-byclass-train.csv")
 
-	cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords := os.Args[1], os.Args[2], os.Args[3], os.Args[4]
+	cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords, cmdLineNumFeatures := os.Args[1], os.Args[2], os.Args[3], os.Args[4], os.Args[5]
 
 	numIterations, errAtoiNumIterations := strconv.Atoi(cmdLineNumItrs)
 	if errAtoiNumIterations != nil {
@@ -39,7 +39,13 @@ func main() {
 		panic(errAtoiNumTestRecords)
 	}
 
-	fmt.Printf("numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v\n", numIterations, alpha, numRecords, numTestRecords)
+	numFeatures, errAtoiNumFeatures := strconv.Atoi(cmdLineNumFeatures)
+	if errAtoiNumFeatures != nil {
+		fmt.Printf("errAToINumFeatures.Error(): %v\n", errAtoiNumFeatures.Error())
+		panic(errAtoiNumFeatures)
+	}
+
+	fmt.Printf("numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v, numFeatures: %v\n", numIterations, alpha, numRecords, numTestRecords, numFeatures)
 
 	file, errOs := os.Open("MnistTrainingData/emnist-digits-train.csv")
 	if errOs != nil {
@@ -75,6 +81,7 @@ func main() {
 	fmt.Printf("len(allXs[0]): %v\n", len(allXs[0]))
 
 	xTranspose := transposeMatrice(allXs)
+	xTranspose = selectFeatures(xTranspose, numFeatures)
 	xTranspose = normalizeMatrix(xTranspose)
 	yOneHot := convertToOneHot(allYs)
 
@@ -83,23 +90,44 @@ func main() {
 	fmt.Printf("allYsDim: (%v)\n", len(allYs))
 	fmt.Printf("yOneHotDim: (%v, %v)\n", len(yOneHot), len(yOneHot[0]))
 
-	W1, W2, b1, b2 := initialize(len(allXs[0]), len(allXs), 10, 10)
+	W1, W2, b1, b2 := initialize(len(xTranspose), len(xTranspose[0]), 10, 10)
 
 	fmt.Printf("W1Dim: (%v, %v)\n", len(W1), len(W1[0]))
 	fmt.Printf("W2Dim: (%v, %v)\n", len(W2), len(W2[0]))
 	fmt.Printf("b1Dim: (%v, %v)\n", len(b1), len(b1[0]))
 	fmt.Printf("b2Dim: (%v, %v)\n", len(b2), len(b2[0]))
 
+	fmt.Println("Weights before iterations:")
+	fmt.Printf("W1: %v\n", W1)
+	fmt.Printf("W2: %v\n", W2)
+
+	fmt.Println("Biases before iterations:")
+	fmt.Printf("b1: %v\n", b1)
+	fmt.Printf("b2: %v\n", b2)
+
+	fmt.Println("Weights and Biases during iterations:")
+
 	// numIterations, alpha := 100, 10.0
 	for itr := 0; itr < numIterations; itr++ {
+
+		fmt.Printf("\n\n================================= %v =================================\n\n", itr)
+
 		A1, A2, Z1, _ := feedForward(xTranspose, W1, W2, b1, b2)
-		dZ2, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
+		_, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
 
 		// fmt.Printf("dZ2: %v\n", dZ2)
-		totalErrors, accuracy := calcFinalErrorsAndAccuracy(dZ2, yOneHot)
+		totalErrors, accuracy, predictions, actuals := calcFinalErrorsAndAccuracy(A2, yOneHot)
 		fmt.Printf("ITR[%v] - errorRate: %v, accuracy: %v\n", itr, totalErrors, accuracy)
 
 		W1, W2, b1, b2 = updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1, alpha)
+
+		// fmt.Printf("W1: %v\n", W1)
+		// fmt.Printf("W2: %v\n", W2)
+		// fmt.Printf("b1: %v\n", b1)
+		// fmt.Printf("b2: %v\n", b2)
+
+		fmt.Printf("Actuals: 			%v\n", actuals)
+		fmt.Printf("Predictions: 	%v\n", predictions)
 
 		// if itr <= 3 {
 		// 	fmt.Printf("transpose(A2)[0]			: %v\n", transposeMatrice(A2)[0])
@@ -127,9 +155,11 @@ func main() {
 		panic(errRead)
 	}
 
+	// fmt.Printf("testRecords[0]: %v\n", testRecords[0])
+
 	// testIndex := 0
 
-	if numRecords != -1 {
+	if numTestRecords != -1 {
 		testRecords = testRecords[:numTestRecords]
 	} else {
 		numTestRecords = len(testRecords)
@@ -145,7 +175,7 @@ func main() {
 
 	// testOutput := convertToOneHot([]float64{testYs[testIndex]})
 
-	testInput := normalizeMatrix(transposeMatrice(testXs))
+	testInput := normalizeMatrix(selectFeatures(transposeMatrice(testXs), numFeatures))
 
 	testOutput := convertToOneHot(testYs)
 
@@ -159,12 +189,42 @@ func main() {
 	// bias2 = transposeMatrice(bias2)
 	bias2 := expandMatrix(divideMatrixBy(addUpRows(b2), float64(numRecords)), numTestRecords)
 
-	A1, A2, Z1, _ := feedForward(testInput, W1, W2, bias1, bias2)
-	dZ2, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
-	totalErrors, accuracy := calcFinalErrorsAndAccuracy(dZ2, testOutput)
+	_, A2, _, _ := feedForward(testInput, W1, W2, bias1, bias2)
+	// _, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
+	totalErrors, accuracy, testPredictions, testActuals := calcFinalErrorsAndAccuracy(A2, testOutput)
+
+	fmt.Print("\n\n================================= TESTS =================================\n\n")
 
 	fmt.Printf("TestOutput - errorRate: %v, accuracy: %v\n", totalErrors, accuracy)
 
+	fmt.Printf("TestActuals:	 		%v\n", testActuals)
+	fmt.Printf("TestPredictions: 	%v\n", testPredictions)
+}
+
+func selectFeatures(A [][]float64, numFeatures int) [][]float64 {
+	returnMatrix := [][]float64{}
+
+	if len(A) < numFeatures {
+		errLen := errors.New("illegal Operation: Cant include numFeatures due to matrix being smaller")
+		fmt.Printf("errLen.Error(): %v | len(A): %v numFeatures: %v\n", errLen.Error(), len(A), numFeatures)
+		panic(errLen)
+	}
+
+	if numFeatures < 0 {
+		numFeatures = len(A)
+	}
+
+	for i, row := range A {
+		if i >= numFeatures {
+			break
+		}
+		newRow := []float64{}
+		newRow = append(newRow, row...)
+		returnMatrix = append(returnMatrix, newRow)
+	}
+
+	// fmt.Printf("selectFeatures - returnMatrix: %v\n", returnMatrix)
+	return returnMatrix
 }
 
 func normalizeMatrix(A [][]float64) [][]float64 {
@@ -175,6 +235,10 @@ func normalizeMatrix(A [][]float64) [][]float64 {
 
 	for _, row := range A {
 		maxValue = math.Max(maxValue, findMax(row))
+	}
+
+	if maxValue == 0 {
+		return A
 	}
 
 	for _, row := range A {
@@ -188,36 +252,48 @@ func normalizeMatrix(A [][]float64) [][]float64 {
 	return returnMatrix
 }
 
-func calcFinalErrorsAndAccuracy(dZ2, Y [][]float64) (float64, float64) {
-	m, n := len(dZ2), len(dZ2[0])
+func calcFinalErrorsAndAccuracy(A2, Y [][]float64) (float64, float64, []int, []int) {
+	m, n := len(A2), len(A2[0])
 	sumError, correct := 0.0, 0
+	actuals, predictions := []int{}, []int{}
 
 	for j := 0; j < n; j++ {
-		sum, minDifference, predicted, actualAnswer := 0.0, float64(math.MaxInt), -1, -1
+		sum, maxPossibility, predicted, actualAnswer := 0.0, float64(math.MinInt), -1, -1
 		for i := 0; i < m; i++ {
-			sum += math.Abs(dZ2[i][j])
-			if math.Abs(dZ2[i][j]) <= minDifference {
-				minDifference = dZ2[i][j]
+			sum += math.Abs(A2[i][j] - Y[i][j])
+			if math.Abs(A2[i][j]) > maxPossibility {
+				maxPossibility = A2[i][j]
 				predicted = i
 			}
 			if Y[i][j] == 1 {
 				actualAnswer = i
+				actuals = append(actuals, actualAnswer)
 			}
 		}
 		sumError += sum / float64(m)
+		predictions = append(predictions, predicted)
 		if predicted == actualAnswer {
 			correct += 1
 		}
 	}
 
-	return sumError / float64(n), float64(correct) / float64(n)
+	return sumError / float64(n), float64(correct) / float64(n), predictions, actuals
 }
 
 func updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1 [][]float64, alpha float64) ([][]float64, [][]float64, [][]float64, [][]float64) {
+
+	// fmt.Println("updateWeightsAndBias - ")
+	// fmt.Printf("dW1: 		%v\n", dW1)
+
 	newW1 := subtactMatrices(W1, multipyMatrixBy(dW1, alpha))
 	newW2 := subtactMatrices(W2, multipyMatrixBy(dW2, alpha))
 	newb1 := subtactMatrices(b1, multipyMatrixBy(dB1, alpha))
 	newb2 := subtactMatrices(b2, multipyMatrixBy(dB2, alpha))
+
+	// fmt.Printf("W1: 		%v\n", W1)
+	// fmt.Printf("newW1: 	%v\n", newW1)
+	// fmt.Printf("W2: 		%v\n", W2)
+	// fmt.Printf("newW2: 	%v\n", newW2)
 
 	return newW1, newW2, newb1, newb2
 }
@@ -277,6 +353,14 @@ func initialize(n, m, l1, l2 int) ([][]float64, [][]float64, [][]float64, [][]fl
 }
 
 func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
+
+	// fmt.Println("feedForward:")
+	// fmt.Printf("X : %v\n", X)
+	// fmt.Printf("W1: %v\n", W1)
+	// fmt.Printf("W2: %v\n", W2)
+	// fmt.Printf("b1: %v\n", b1)
+	// fmt.Printf("b2: %v\n", b2)
+
 	Z1 = addMatrices(crossProduct(W1, X), b1)
 	// fmt.Printf("feedForward -\nZ1: %v\n", Z1)
 	Z1 = normalizeMatrix(Z1)
@@ -290,10 +374,10 @@ func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
 	A2 = activateNeurons(Z2, "softmax")
 	// fmt.Printf("feedForward -\nA2: %v\n", A2)
 
-	// fmt.Printf("feedForward - Z1Dim: (%v, %v)\n", len(Z1), len(Z1[0]))
-	// fmt.Printf("feedForward - A1Dim: (%v, %v)\n", len(A1), len(A1[0]))
-	// fmt.Printf("feedForward - Z2Dim: (%v, %v)\n", len(Z2), len(Z2[0]))
-	// fmt.Printf("feedForward - A2Dim: (%v, %v)\n", len(A2), len(A2[0]))
+	fmt.Printf("feedForward - Z1Dim: (%v, %v)\n", len(Z1), len(Z1[0]))
+	fmt.Printf("feedForward - A1Dim: (%v, %v)\n", len(A1), len(A1[0]))
+	fmt.Printf("feedForward - Z2Dim: (%v, %v)\n", len(Z2), len(Z2[0]))
+	fmt.Printf("feedForward - A2Dim: (%v, %v)\n", len(A2), len(A2[0]))
 
 	return
 }
@@ -320,14 +404,20 @@ func calcErrors(Y, A2, A1, Z1, X [][]float64) ([][]float64, [][]float64, [][]flo
 
 	gZ1 := undoActivationReLU(Z1)
 
+	// fmt.Printf("calcErrors -  gZ1: 		%v\n", gZ1)
+
 	// fmt.Printf("calcErrors - gZ1Dim: (%v, %v)\n", len(gZ1), len(gZ1[0]))
 
 	dZ1 := dotProduct(crossProduct(transposeMatrice(dW2), dZ2), gZ1)
 
+	// fmt.Printf("calcErrors -  dZ1: 		%v\n", dZ1)
+
 	// fmt.Printf("calcErrors - dZ1Dim: (%v, %v)\n", len(dZ1), len(dZ1[0]))
 
 	dW1 := crossProduct(dZ1, transposeMatrice(X))
+	// fmt.Printf("calcErrors -  dW1: 		%v\n", dW1)
 	dW1 = divideMatrixBy(dW1, float64(m))
+	// fmt.Printf("calcErrors -  dW1: 		%v\n", dW1)
 
 	// fmt.Printf("calcErrors - dW1Dim: (%v, %v)\n", len(dW1), len(dW1[0]))
 
@@ -360,7 +450,7 @@ func dotProduct(A, B [][]float64) [][]float64 {
 	mA, nA, mB, nB := len(A), len(A[0]), len(B), len(B[0])
 
 	if mA != mB || nA != nB {
-		errDim := errors.New("Illegal Operation: Matrix Dot Product not possible due to dimentions")
+		errDim := errors.New("illegal Operation: Matrix Dot Product not possible due to dimentions")
 		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
@@ -452,7 +542,7 @@ func activateNeurons(Z [][]float64, activationName string) [][]float64 {
 		}
 
 	default:
-		errActivation := errors.New("Illegal Activation Function")
+		errActivation := errors.New("illegal Activation Function")
 		fmt.Printf("errActivation.Error(): %v | activationName %v\n", errActivation.Error(), activationName)
 		panic(errActivation)
 	}
@@ -479,7 +569,7 @@ func crossProduct(A, B [][]float64) [][]float64 {
 	mA, nA, mB, nB := len(A), len(A[0]), len(B), len(B[0])
 
 	if nA != mB {
-		errDim := errors.New("Illegal Operation: Dot Product not possible due to dimentions")
+		errDim := errors.New("illegal Operation: Cross Product not possible due to dimentions")
 		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
@@ -504,7 +594,7 @@ func addMatrices(A, B [][]float64) [][]float64 {
 	mA, nA, mB, nB := len(A), len(A[0]), len(B), len(B[0])
 
 	if mA != mB || nA != nB {
-		errDim := errors.New("Illegal Operation: Matrix Addition not possible due to dimentions")
+		errDim := errors.New("illegal Operation: Matrix Addition not possible due to dimentions")
 		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
@@ -527,7 +617,7 @@ func subtactMatrices(A, B [][]float64) [][]float64 {
 	// fmt.Printf("subtractMatrices -\nA: %v\nB: %v\n", A, B)
 
 	if mA != mB || nA != nB {
-		errDim := errors.New("Illegal Operation: Matrix Subtraction not possible due to dimentions")
+		errDim := errors.New("illegal Operation: Matrix Subtraction not possible due to dimentions")
 		fmt.Printf("errDim.Error(): %v | mA: %v nA: %v mB: %v nB: %v\n", errDim.Error(), mA, nA, mB, nB)
 		panic(errDim)
 	}
@@ -609,8 +699,8 @@ func convertToOneHot(list []float64) [][]float64 {
 func findMax(list []float64) float64 {
 	maxSoFar := float64(math.MinInt)
 	for _, num := range list {
-		if num > maxSoFar {
-			maxSoFar = num
+		if math.Abs(num) > maxSoFar {
+			maxSoFar = math.Abs(num)
 		}
 	}
 	return maxSoFar
