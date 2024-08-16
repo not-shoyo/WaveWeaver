@@ -13,7 +13,13 @@ import (
 func main() {
 	// file, errOs := os.Open("MnistTrainingData/emnist-byclass-train.csv")
 
-	cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords, cmdLineNumFeatures := os.Args[1], os.Args[2], os.Args[3], os.Args[4], os.Args[5]
+	cmdLineEpochs, cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords, cmdLineNumFeatures := os.Args[1], os.Args[2], os.Args[3], os.Args[4], os.Args[5], os.Args[6]
+
+	numEpochs, errAtoiNumEpochs := strconv.Atoi(cmdLineEpochs)
+	if errAtoiNumEpochs != nil {
+		fmt.Printf("errAToINumEpochs.Error(): %v\n", errAtoiNumEpochs.Error())
+		panic(errAtoiNumEpochs)
+	}
 
 	numIterations, errAtoiNumIterations := strconv.Atoi(cmdLineNumItrs)
 	if errAtoiNumIterations != nil {
@@ -45,7 +51,7 @@ func main() {
 		panic(errAtoiNumFeatures)
 	}
 
-	fmt.Printf("numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v, numFeatures: %v\n", numIterations, alpha, numRecords, numTestRecords, numFeatures)
+	fmt.Printf("numEpochs: %v, numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v, numFeatures: %v\n", numEpochs, numIterations, alpha, numRecords, numTestRecords, numFeatures)
 
 	file, errOs := os.Open("MnistTrainingData/emnist-digits-train.csv")
 	if errOs != nil {
@@ -97,46 +103,58 @@ func main() {
 	fmt.Printf("b1Dim: (%v, %v)\n", len(b1), len(b1[0]))
 	fmt.Printf("b2Dim: (%v, %v)\n", len(b2), len(b2[0]))
 
-	fmt.Println("Weights before iterations:")
-	fmt.Printf("W1: %v\n", W1)
-	fmt.Printf("W2: %v\n", W2)
+	// fmt.Println("Weights before iterations:")
+	// fmt.Printf("W1: %v\n", W1)
+	// fmt.Printf("W2: %v\n", W2)
 
-	fmt.Println("Biases before iterations:")
-	fmt.Printf("b1: %v\n", b1)
-	fmt.Printf("b2: %v\n", b2)
+	// fmt.Println("Biases before iterations:")
+	// fmt.Printf("b1: %v\n", b1)
+	// fmt.Printf("b2: %v\n", b2)
 
-	fmt.Println("Weights and Biases during iterations:")
+	// fmt.Println("Weights and Biases during iterations:")
 
-	// numIterations, alpha := 100, 10.0
-	for itr := 0; itr < numIterations; itr++ {
+	for e := 0; e < numEpochs; e++ {
+		// numIterations, alpha := 100, 10.0
+		epochErrors, epochAccuracy := 0.0, 0.0
+		for itr := 0; itr < numIterations; itr++ {
 
-		fmt.Printf("\n\n================================= %v =================================\n\n", itr)
+			// fmt.Printf("\n\n================================= %v =================================\n\n", itr)
 
-		A1, A2, Z1, _ := feedForward(xTranspose, W1, W2, b1, b2)
-		_, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
+			A1, A2, Z1, _ := feedForward(xTranspose, W1, W2, b1, b2)
+			_, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
 
-		// fmt.Printf("dZ2: %v\n", dZ2)
-		totalErrors, accuracy, predictions, actuals := calcFinalErrorsAndAccuracy(A2, yOneHot)
-		fmt.Printf("ITR[%v] - errorRate: %v, accuracy: %v\n", itr, totalErrors, accuracy)
+			// fmt.Printf("dZ2: %v\n", dZ2)
+			// totalErrors, accuracy, predictions, actuals := calcFinalErrorsAndAccuracy(A2, yOneHot)
+			totalErrors, accuracy, _, _ := calcFinalErrorsAndAccuracy(A2, yOneHot)
+			epochErrors += totalErrors
+			epochAccuracy += accuracy
+			if itr%10 == 0 {
+				fmt.Printf("ITR[%v] - errorRate: %v, accuracy: %v\n", itr, totalErrors, accuracy)
+			}
 
-		W1, W2, b1, b2 = updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1, alpha)
+			W1, W2, b1, b2 = updateWeightsAndBias(W1, W2, b1, b2, dW2, dB2, dW1, dB1, alpha)
 
-		// fmt.Printf("W1: %v\n", W1)
-		// fmt.Printf("W2: %v\n", W2)
-		// fmt.Printf("b1: %v\n", b1)
-		// fmt.Printf("b2: %v\n", b2)
+			// fmt.Printf("W1: %v\n", W1)
+			// fmt.Printf("W2: %v\n", W2)
+			// fmt.Printf("b1: %v\n", b1)
+			// fmt.Printf("b2: %v\n", b2)
 
-		fmt.Printf("Actuals: 			%v\n", actuals)
-		fmt.Printf("Predictions: 	%v\n", predictions)
+			// fmt.Printf("Actuals: 			%v\n", actuals)
+			// fmt.Printf("Predictions: 	%v\n", predictions)
 
-		// if itr <= 3 {
-		// 	fmt.Printf("transpose(A2)[0]			: %v\n", transposeMatrice(A2)[0])
-		// 	fmt.Printf("transpose(yOneHot)[0]	: %v\n", transposeMatrice(yOneHot)[0])
-		// 	fmt.Printf("transpose(A2)[1]			: %v\n", transposeMatrice(A2)[1])
-		// 	fmt.Printf("transpose(yOneHot)[1]	: %v\n", transposeMatrice(yOneHot)[1])
-		// 	fmt.Printf("transpose(A2)[2]			: %v\n", transposeMatrice(A2)[2])
-		// 	fmt.Printf("transpose(yOneHot)[2]	: %v\n", transposeMatrice(yOneHot)[2])
-		// }
+			// if itr <= 3 {
+			// 	fmt.Printf("transpose(A2)[0]			: %v\n", transposeMatrice(A2)[0])
+			// 	fmt.Printf("transpose(yOneHot)[0]	: %v\n", transposeMatrice(yOneHot)[0])
+			// 	fmt.Printf("transpose(A2)[1]			: %v\n", transposeMatrice(A2)[1])
+			// 	fmt.Printf("transpose(yOneHot)[1]	: %v\n", transposeMatrice(yOneHot)[1])
+			// 	fmt.Printf("transpose(A2)[2]			: %v\n", transposeMatrice(A2)[2])
+			// 	fmt.Printf("transpose(yOneHot)[2]	: %v\n", transposeMatrice(yOneHot)[2])
+			// }
+
+		}
+
+		fmt.Printf("\n\n================================= EPOCH-%v =================================\n\n", e)
+		fmt.Printf("errorRate: %v, accuracy: %v\n\n\n", epochErrors/float64(numIterations), epochAccuracy/float64(numIterations))
 
 	}
 
@@ -191,14 +209,15 @@ func main() {
 
 	_, A2, _, _ := feedForward(testInput, W1, W2, bias1, bias2)
 	// _, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
-	totalErrors, accuracy, testPredictions, testActuals := calcFinalErrorsAndAccuracy(A2, testOutput)
+	// totalErrors, accuracy, testPredictions, testActuals := calcFinalErrorsAndAccuracy(A2, testOutput)
+	totalErrors, accuracy, _, _ := calcFinalErrorsAndAccuracy(A2, testOutput)
 
 	fmt.Print("\n\n================================= TESTS =================================\n\n")
 
 	fmt.Printf("TestOutput - errorRate: %v, accuracy: %v\n", totalErrors, accuracy)
 
-	fmt.Printf("TestActuals:	 		%v\n", testActuals)
-	fmt.Printf("TestPredictions: 	%v\n", testPredictions)
+	// fmt.Printf("TestActuals:	 		%v\n", testActuals)
+	// fmt.Printf("TestPredictions: 	%v\n", testPredictions)
 }
 
 func selectFeatures(A [][]float64, numFeatures int) [][]float64 {
@@ -328,7 +347,7 @@ func initialize(n, m, l1, l2 int) ([][]float64, [][]float64, [][]float64, [][]fl
 	for i := 0; i < l1; i++ {
 		biasRow := []float64{}
 		for i := 0; i < m; i++ {
-			biasRow = append(biasRow, -0.5+((rand.Float64()*10)+1)/10) //0.0
+			biasRow = append(biasRow, 0) //0.0
 		}
 		b1 = append(b1, biasRow)
 	}
@@ -344,7 +363,7 @@ func initialize(n, m, l1, l2 int) ([][]float64, [][]float64, [][]float64, [][]fl
 	for i := 0; i < l2; i++ {
 		biasRow := []float64{}
 		for i := 0; i < m; i++ {
-			biasRow = append(biasRow, -0.5+((rand.Float64()*10)+1)/10) //0.0
+			biasRow = append(biasRow, 0) //0.0
 		}
 		b2 = append(b2, biasRow)
 	}
@@ -374,10 +393,10 @@ func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
 	A2 = activateNeurons(Z2, "softmax")
 	// fmt.Printf("feedForward -\nA2: %v\n", A2)
 
-	fmt.Printf("feedForward - Z1Dim: (%v, %v)\n", len(Z1), len(Z1[0]))
-	fmt.Printf("feedForward - A1Dim: (%v, %v)\n", len(A1), len(A1[0]))
-	fmt.Printf("feedForward - Z2Dim: (%v, %v)\n", len(Z2), len(Z2[0]))
-	fmt.Printf("feedForward - A2Dim: (%v, %v)\n", len(A2), len(A2[0]))
+	// fmt.Printf("feedForward - Z1Dim: (%v, %v)\n", len(Z1), len(Z1[0]))
+	// fmt.Printf("feedForward - A1Dim: (%v, %v)\n", len(A1), len(A1[0]))
+	// fmt.Printf("feedForward - Z2Dim: (%v, %v)\n", len(Z2), len(Z2[0]))
+	// fmt.Printf("feedForward - A2Dim: (%v, %v)\n", len(A2), len(A2[0]))
 
 	return
 }
