@@ -68,7 +68,7 @@ func main() {
 		panic(errRead)
 	}
 
-	fmt.Printf("allRecords[0]: %v\n", allRecords[0])
+	// fmt.Printf("allRecords[0]: %v\n", allRecords[0])
 
 	if numRecords != -1 {
 		allRecords = allRecords[:numRecords]
@@ -116,12 +116,15 @@ func main() {
 	for e := 0; e < numEpochs; e++ {
 		// numIterations, alpha := 100, 10.0
 		epochErrors, epochAccuracy := 0.0, 0.0
+
+		fmt.Printf("\n\n================================= repetition-%v =================================\n\n", e)
+
 		for itr := 0; itr < numIterations; itr++ {
 
 			// fmt.Printf("\n\n================================= %v =================================\n\n", itr)
 
 			A1, A2, Z1, _ := feedForward(xTranspose, W1, W2, b1, b2)
-			_, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose)
+			_, dW2, dB2, dW1, dB1 := calcErrors(yOneHot, A2, A1, Z1, xTranspose, W2)
 
 			// fmt.Printf("dZ2: %v\n", dZ2)
 			// totalErrors, accuracy, predictions, actuals := calcFinalErrorsAndAccuracy(A2, yOneHot)
@@ -153,8 +156,7 @@ func main() {
 
 		}
 
-		fmt.Printf("\n\n================================= EPOCH-%v =================================\n\n", e)
-		fmt.Printf("errorRate: %v, accuracy: %v\n\n\n", epochErrors/float64(numIterations), epochAccuracy/float64(numIterations))
+		fmt.Printf("repetition[%v] - errorRate: %v, accuracy: %v\n\n\n", e, epochErrors/float64(numIterations), epochAccuracy/float64(numIterations))
 
 	}
 
@@ -382,13 +384,13 @@ func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
 
 	Z1 = addMatrices(crossProduct(W1, X), b1)
 	// fmt.Printf("feedForward -\nZ1: %v\n", Z1)
-	Z1 = normalizeMatrix(Z1)
+	// Z1 = normalizeMatrix(Z1)
 	// fmt.Printf("feedForward -\nZ1 after normalizing: %v\n", Z1)
 	A1 = activateNeurons(Z1, "reLU")
 	// fmt.Printf("feedForward -\nA1: %v\n", A1)
 	Z2 = addMatrices(crossProduct(W2, A1), b2)
 	// fmt.Printf("feedForward -\nZ2: %v\n", Z2)
-	Z2 = normalizeMatrix(Z2)
+	// Z2 = normalizeMatrix(Z2)
 	// fmt.Printf("feedForward -\nZ2 after normalizing: %v\n", Z2)
 	A2 = activateNeurons(Z2, "softmax")
 	// fmt.Printf("feedForward -\nA2: %v\n", A2)
@@ -401,7 +403,7 @@ func feedForward(X, W1, W2, b1, b2 [][]float64) (A1, A2, Z1, Z2 [][]float64) {
 	return
 }
 
-func calcErrors(Y, A2, A1, Z1, X [][]float64) ([][]float64, [][]float64, [][]float64, [][]float64, [][]float64) {
+func calcErrors(Y, A2, A1, Z1, X, W2 [][]float64) ([][]float64, [][]float64, [][]float64, [][]float64, [][]float64) {
 	m := len(Y[0])
 
 	dZ2 := subtactMatrices(A2, Y)
@@ -427,7 +429,8 @@ func calcErrors(Y, A2, A1, Z1, X [][]float64) ([][]float64, [][]float64, [][]flo
 
 	// fmt.Printf("calcErrors - gZ1Dim: (%v, %v)\n", len(gZ1), len(gZ1[0]))
 
-	dZ1 := dotProduct(crossProduct(transposeMatrice(dW2), dZ2), gZ1)
+	// dZ1 := dotProduct(crossProduct(transposeMatrice(dW2), dZ2), gZ1)
+	dZ1 := dotProduct(crossProduct(transposeMatrice(W2), dZ2), gZ1) // possible fix in error.
 
 	// fmt.Printf("calcErrors -  dZ1: 		%v\n", dZ1)
 
