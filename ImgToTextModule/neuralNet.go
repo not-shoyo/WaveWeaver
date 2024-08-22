@@ -160,6 +160,9 @@ func main() {
 
 	}
 
+	// Save W1 b1 W2 b2 into a text file as fully trained weights.
+	saveWeights(W1, divideMatrixBy(addUpRows(b1), float64(numRecords)), W2, divideMatrixBy(addUpRows(b2), float64(numRecords)))
+
 	testFile, errOs := os.Open("MnistTrainingData/emnist-digits-test.csv")
 	if errOs != nil {
 		fmt.Printf("errOs.Error(): %v\n", errOs.Error())
@@ -220,6 +223,81 @@ func main() {
 
 	// fmt.Printf("TestActuals:	 		%v\n", testActuals)
 	// fmt.Printf("TestPredictions: 	%v\n", testPredictions)
+}
+
+func saveWeights(W1 [][]float64, b1 [][]float64, W2 [][]float64, b2 [][]float64) {
+	trainedWeightsFile, errTrainedWeightsFile := os.Create("NeuralNetWeights/trainedWeightsFull.txt")
+	if errTrainedWeightsFile != nil {
+		fmt.Printf("errTrainedWeightsFile.Error(): %v\n", errTrainedWeightsFile.Error())
+		panic(errTrainedWeightsFile)
+	}
+
+	defer trainedWeightsFile.Close()
+
+	numLayers := 2
+	weights1Dim := []int{len(W1), len(W1[0])}
+	weights2Dim := []int{len(W2), len(W2[0])}
+	biases1Dim, biases2Dim := len(b1), len(b2)
+
+	writeIntToFile(trainedWeightsFile, numLayers)
+	nextFileLine(trainedWeightsFile)
+	writeIntToFile(trainedWeightsFile, weights1Dim[0])
+	writeIntToFile(trainedWeightsFile, weights1Dim[1])
+	nextFileLine(trainedWeightsFile)
+	writeIntToFile(trainedWeightsFile, weights2Dim[0])
+	writeIntToFile(trainedWeightsFile, weights2Dim[0])
+	nextFileLine(trainedWeightsFile)
+	writeIntToFile(trainedWeightsFile, biases1Dim)
+	nextFileLine(trainedWeightsFile)
+	writeIntToFile(trainedWeightsFile, biases2Dim)
+
+	nextFileLine(trainedWeightsFile)
+
+	writeMatrixToFile(W1, trainedWeightsFile)
+	nextFileLine(trainedWeightsFile)
+	writeMatrixToFile(b1, trainedWeightsFile)
+	nextFileLine(trainedWeightsFile)
+	writeMatrixToFile(W2, trainedWeightsFile)
+	nextFileLine(trainedWeightsFile)
+	writeMatrixToFile(b2, trainedWeightsFile)
+	nextFileLine(trainedWeightsFile)
+
+}
+
+func writeMatrixToFile(W1 [][]float64, trainedWeightsFile *os.File) {
+	for _, row := range W1 {
+		for _, v := range row {
+			writeFloatToFile(trainedWeightsFile, v)
+		}
+		nextFileLine(trainedWeightsFile)
+	}
+}
+
+func nextFileLine(outputFile *os.File) {
+	_, errNewLineWrite := outputFile.WriteString("\n")
+	if errNewLineWrite != nil {
+		fmt.Printf("errNewLineWrite.Error(): %v\n", errNewLineWrite.Error())
+		panic(errNewLineWrite)
+	}
+
+}
+
+func writeIntToFile(outputFile *os.File, val int) {
+	_, errWrite := outputFile.WriteString(fmt.Sprintf("%v ", val))
+	if errWrite != nil {
+		fmt.Printf("errWrite.Error(): %v\n", errWrite.Error())
+		panic(errWrite)
+	}
+
+}
+
+func writeFloatToFile(outputFile *os.File, val float64) {
+	_, errWrite := outputFile.WriteString(fmt.Sprintf("%v ", val))
+	if errWrite != nil {
+		fmt.Printf("errWrite.Error(): %v\n", errWrite.Error())
+		panic(errWrite)
+	}
+
 }
 
 func selectFeatures(A [][]float64, numFeatures int) [][]float64 {
