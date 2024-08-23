@@ -8,6 +8,10 @@ import (
 	"github.com/ernyoke/imger/threshold"
 )
 
+func main() {
+	convertPageImgToArrayOfBinaryLetters()
+}
+
 func convertPageImgToArrayOfBinaryLetters() {
 	path := "ImgData/SamplePdfScreenshot1.png"
 
