@@ -1,4 +1,4 @@
-package main
+package neuralnet
 
 import (
 	"encoding/csv"
@@ -10,50 +10,68 @@ import (
 	"strconv"
 )
 
-func main() {
+func TrainNeuralNetwork(cmdLineTrainingFile string, numEpochs, numIterations int, alpha float64, numRecords, numTestRecords, numFeatures, l1Neurons, l2Neurons int, cmdLineSaveFile string) {
 	// file, errOs := os.Open("MnistTrainingData/emnist-byclass-train.csv")
+	// cmdLineTrainingFile := os.Args[1]
 
-	cmdLineEpochs, cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords, cmdLineNumFeatures := os.Args[1], os.Args[2], os.Args[3], os.Args[4], os.Args[5], os.Args[6]
+	// cmdLineEpochs, cmdLineNumItrs, cmdLineAlpha, cmdLineNumRecords, cmdLineNumTestRecords, cmdLineNumFeatures := os.Args[1], os.Args[2], os.Args[3], os.Args[4], os.Args[5], os.Args[6]
+	// cmdLineL1Neurons, cmdLineL2Neurons := os.Args[7], os.Args[7]
 
-	numEpochs, errAtoiNumEpochs := strconv.Atoi(cmdLineEpochs)
-	if errAtoiNumEpochs != nil {
-		fmt.Printf("errAToINumEpochs.Error(): %v\n", errAtoiNumEpochs.Error())
-		panic(errAtoiNumEpochs)
-	}
+	// cmdLineSaveFile := os.Args[10]
+	// cmdLineTestingFile := os.Args[11]
 
-	numIterations, errAtoiNumIterations := strconv.Atoi(cmdLineNumItrs)
-	if errAtoiNumIterations != nil {
-		fmt.Printf("errAToINumIterations.Error(): %v\n", errAtoiNumIterations.Error())
-		panic(errAtoiNumIterations)
-	}
+	// numEpochs, errAtoiNumEpochs := strconv.Atoi(cmdLineEpochs)
+	// if errAtoiNumEpochs != nil {
+	// 	fmt.Printf("errAToINumEpochs.Error(): %v\n", errAtoiNumEpochs.Error())
+	// 	panic(errAtoiNumEpochs)
+	// }
 
-	alpha, errAtoiAlpha := strconv.ParseFloat(cmdLineAlpha, 64)
-	if errAtoiAlpha != nil {
-		fmt.Printf("errAToIAlpha.Error(): %v\n", errAtoiAlpha.Error())
-		panic(errAtoiAlpha)
-	}
+	// numIterations, errAtoiNumIterations := strconv.Atoi(cmdLineNumItrs)
+	// if errAtoiNumIterations != nil {
+	// 	fmt.Printf("errAToINumIterations.Error(): %v\n", errAtoiNumIterations.Error())
+	// 	panic(errAtoiNumIterations)
+	// }
 
-	numRecords, errAtoiNumRecords := strconv.Atoi(cmdLineNumRecords)
-	if errAtoiNumRecords != nil {
-		fmt.Printf("errAToINumRecords.Error(): %v\n", errAtoiNumRecords.Error())
-		panic(errAtoiNumRecords)
-	}
+	// alpha, errAtoiAlpha := strconv.ParseFloat(cmdLineAlpha, 64)
+	// if errAtoiAlpha != nil {
+	// 	fmt.Printf("errAToIAlpha.Error(): %v\n", errAtoiAlpha.Error())
+	// 	panic(errAtoiAlpha)
+	// }
 
-	numTestRecords, errAtoiNumTestRecords := strconv.Atoi(cmdLineNumTestRecords)
-	if errAtoiNumTestRecords != nil {
-		fmt.Printf("errAToINumTestRecords.Error(): %v\n", errAtoiNumTestRecords.Error())
-		panic(errAtoiNumTestRecords)
-	}
+	// numRecords, errAtoiNumRecords := strconv.Atoi(cmdLineNumRecords)
+	// if errAtoiNumRecords != nil {
+	// 	fmt.Printf("errAToINumRecords.Error(): %v\n", errAtoiNumRecords.Error())
+	// 	panic(errAtoiNumRecords)
+	// }
 
-	numFeatures, errAtoiNumFeatures := strconv.Atoi(cmdLineNumFeatures)
-	if errAtoiNumFeatures != nil {
-		fmt.Printf("errAToINumFeatures.Error(): %v\n", errAtoiNumFeatures.Error())
-		panic(errAtoiNumFeatures)
-	}
+	// numTestRecords, errAtoiNumTestRecords := strconv.Atoi(cmdLineNumTestRecords)
+	// if errAtoiNumTestRecords != nil {
+	// 	fmt.Printf("errAToINumTestRecords.Error(): %v\n", errAtoiNumTestRecords.Error())
+	// 	panic(errAtoiNumTestRecords)
+	// }
+
+	// numFeatures, errAtoiNumFeatures := strconv.Atoi(cmdLineNumFeatures)
+	// if errAtoiNumFeatures != nil {
+	// 	fmt.Printf("errAToINumFeatures.Error(): %v\n", errAtoiNumFeatures.Error())
+	// 	panic(errAtoiNumFeatures)
+	// }
+
+	// l1Neurons, errAtoiL1Neurons := strconv.Atoi(cmdLineL1Neurons)
+	// if errAtoiL1Neurons != nil {
+	// 	fmt.Printf("errAToIL1Neurons.Error(): %v\n", errAtoiL1Neurons.Error())
+	// 	panic(errAtoiL1Neurons)
+	// }
+
+	// l2Neurons, errAtoiL2Neurons := strconv.Atoi(cmdLineL2Neurons)
+	// if errAtoiL2Neurons != nil {
+	// 	fmt.Printf("errAToIL2Neurons.Error(): %v\n", errAtoiL2Neurons.Error())
+	// 	panic(errAtoiL2Neurons)
+	// }
 
 	fmt.Printf("numEpochs: %v, numIterations: %v, alpha: %v, numRecords: %v, numTestRecords: %v, numFeatures: %v\n", numEpochs, numIterations, alpha, numRecords, numTestRecords, numFeatures)
+	fmt.Printf("l1Neurons: %v, l2Neurons: %v\n", l1Neurons, l2Neurons)
 
-	file, errOs := os.Open("MnistTrainingData/emnist-digits-train.csv")
+	file, errOs := os.Open(cmdLineTrainingFile)
 	if errOs != nil {
 		fmt.Printf("errOs.Error(): %v\n", errOs.Error())
 		panic(errOs)
@@ -96,7 +114,7 @@ func main() {
 	fmt.Printf("allYsDim: (%v)\n", len(allYs))
 	fmt.Printf("yOneHotDim: (%v, %v)\n", len(yOneHot), len(yOneHot[0]))
 
-	W1, W2, b1, b2 := initialize(len(xTranspose), len(xTranspose[0]), 10, 10)
+	W1, W2, b1, b2 := initialize(len(xTranspose), len(xTranspose[0]), l1Neurons, l2Neurons)
 
 	fmt.Printf("W1Dim: (%v, %v)\n", len(W1), len(W1[0]))
 	fmt.Printf("W2Dim: (%v, %v)\n", len(W2), len(W2[0]))
@@ -161,72 +179,74 @@ func main() {
 	}
 
 	// Save W1 b1 W2 b2 into a text file as fully trained weights.
-	saveWeights(W1, divideMatrixBy(addUpRows(b1), float64(numRecords)), W2, divideMatrixBy(addUpRows(b2), float64(numRecords)))
+	saveWeights(cmdLineSaveFile, W1, divideMatrixBy(addUpRows(b1), float64(numRecords)), W2, divideMatrixBy(addUpRows(b2), float64(numRecords)))
 
-	testFile, errOs := os.Open("MnistTrainingData/emnist-digits-test.csv")
-	if errOs != nil {
-		fmt.Printf("errOs.Error(): %v\n", errOs.Error())
-		panic(errOs)
-	}
+	// TestNeuralNet(cmdLineTestingFile, numTestRecords, cmdLineSaveFile)
 
-	defer testFile.Close()
+	// testFile, errOs := os.Open(cmdLineTestingFile)
+	// if errOs != nil {
+	// 	fmt.Printf("errOs.Error(): %v\n", errOs.Error())
+	// 	panic(errOs)
+	// }
 
-	testReader := csv.NewReader(testFile)
-	testRecords, errRead := testReader.ReadAll()
-	if errRead != nil {
-		fmt.Printf("errRead.Error(): %v\n", errRead.Error())
-		panic(errRead)
-	}
+	// defer testFile.Close()
 
-	// fmt.Printf("testRecords[0]: %v\n", testRecords[0])
+	// testReader := csv.NewReader(testFile)
+	// testRecords, errRead := testReader.ReadAll()
+	// if errRead != nil {
+	// 	fmt.Printf("errRead.Error(): %v\n", errRead.Error())
+	// 	panic(errRead)
+	// }
 
-	// testIndex := 0
+	// // fmt.Printf("testRecords[0]: %v\n", testRecords[0])
 
-	if numTestRecords != -1 {
-		testRecords = testRecords[:numTestRecords]
-	} else {
-		numTestRecords = len(testRecords)
-	}
+	// // testIndex := 0
 
-	// fmt.Printf("testRecords[testIndex]: %v\n", testRecords[testIndex])
+	// if numTestRecords != -1 {
+	// 	testRecords = testRecords[:numTestRecords]
+	// } else {
+	// 	numTestRecords = len(testRecords)
+	// }
 
-	testYs, testXs := extractToIntSlices(testRecords)
+	// // fmt.Printf("testRecords[testIndex]: %v\n", testRecords[testIndex])
 
-	// testInput := [][]float64{}
-	// testInput = append(testInput, testXs[testIndex])
-	// testInput = transposeMatrice(testInput)
+	// testYs, testXs := extractToIntSlices(testRecords)
 
-	// testOutput := convertToOneHot([]float64{testYs[testIndex]})
+	// // testInput := [][]float64{}
+	// // testInput = append(testInput, testXs[testIndex])
+	// // testInput = transposeMatrice(testInput)
 
-	testInput := normalizeMatrix(selectFeatures(transposeMatrice(testXs), numFeatures))
+	// // testOutput := convertToOneHot([]float64{testYs[testIndex]})
 
-	testOutput := convertToOneHot(testYs)
+	// testInput := normalizeMatrix(selectFeatures(transposeMatrice(testXs), numFeatures))
 
-	// bias1 := [][]float64{}
-	// bias1 = append(bias1, transposeMatrice(b1)[testIndex])
-	// bias1 = transposeMatrice(bias1)
-	bias1 := expandMatrix(divideMatrixBy(addUpRows(b1), float64(numRecords)), numTestRecords)
+	// testOutput := convertToOneHot(testYs)
 
-	// bias2 := [][]float64{}
-	// bias2 = append(bias2, transposeMatrice(b2)[testIndex])
-	// bias2 = transposeMatrice(bias2)
-	bias2 := expandMatrix(divideMatrixBy(addUpRows(b2), float64(numRecords)), numTestRecords)
+	// // bias1 := [][]float64{}
+	// // bias1 = append(bias1, transposeMatrice(b1)[testIndex])
+	// // bias1 = transposeMatrice(bias1)
+	// bias1 := expandMatrix(divideMatrixBy(addUpRows(b1), float64(numRecords)), numTestRecords)
 
-	_, A2, _, _ := feedForward(testInput, W1, W2, bias1, bias2)
-	// _, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
-	// totalErrors, accuracy, testPredictions, testActuals := calcFinalErrorsAndAccuracy(A2, testOutput)
-	totalErrors, accuracy, _, _ := calcFinalErrorsAndAccuracy(A2, testOutput)
+	// // bias2 := [][]float64{}
+	// // bias2 = append(bias2, transposeMatrice(b2)[testIndex])
+	// // bias2 = transposeMatrice(bias2)
+	// bias2 := expandMatrix(divideMatrixBy(addUpRows(b2), float64(numRecords)), numTestRecords)
 
-	fmt.Print("\n\n================================= TESTS =================================\n\n")
+	// _, A2, _, _ := feedForward(testInput, W1, W2, bias1, bias2)
+	// // _, _, _, _, _ := calcErrors(testOutput, A2, A1, Z1, testInput)
+	// // totalErrors, accuracy, testPredictions, testActuals := calcFinalErrorsAndAccuracy(A2, testOutput)
+	// totalErrors, accuracy, _, _ := calcFinalErrorsAndAccuracy(A2, testOutput)
 
-	fmt.Printf("TestOutput - errorRate: %v, accuracy: %v\n", totalErrors, accuracy)
+	// fmt.Print("\n\n================================= TESTS =================================\n\n")
 
-	// fmt.Printf("TestActuals:	 		%v\n", testActuals)
-	// fmt.Printf("TestPredictions: 	%v\n", testPredictions)
+	// fmt.Printf("TestOutput - errorRate: %v, accuracy: %v\n", totalErrors, accuracy)
+
+	// // fmt.Printf("TestActuals:	 		%v\n", testActuals)
+	// // fmt.Printf("TestPredictions: 	%v\n", testPredictions)
 }
 
-func saveWeights(W1 [][]float64, b1 [][]float64, W2 [][]float64, b2 [][]float64) {
-	trainedWeightsFile, errTrainedWeightsFile := os.Create("NeuralNetWeights/trainedWeightsFull.txt")
+func saveWeights(fileName string, W1 [][]float64, b1 [][]float64, W2 [][]float64, b2 [][]float64) {
+	trainedWeightsFile, errTrainedWeightsFile := os.Create(fileName)
 	if errTrainedWeightsFile != nil {
 		fmt.Printf("errTrainedWeightsFile.Error(): %v\n", errTrainedWeightsFile.Error())
 		panic(errTrainedWeightsFile)
@@ -265,11 +285,14 @@ func saveWeights(W1 [][]float64, b1 [][]float64, W2 [][]float64, b2 [][]float64)
 }
 
 func writeMatrixToFile(W1 [][]float64, trainedWeightsFile *os.File) {
-	for _, row := range W1 {
+	numRows := len(W1)
+	for i, row := range W1 {
 		for _, v := range row {
 			writeFloatToFile(trainedWeightsFile, v)
 		}
-		nextFileLine(trainedWeightsFile)
+		if i != numRows-1 {
+			nextFileLine(trainedWeightsFile)
+		}
 	}
 }
 
