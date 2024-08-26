@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-func TestNeuralNet(testingFile string, numTestRecords int, savedWeightsFileName string) {
+func TestNeuralNet(testingFile string, numTestRecords int, W1, b1, W2, b2 [][]float64) {
 
-	W1, b1, W2, b2 := importSavedWeights(savedWeightsFileName)
+	// W1, b1, W2, b2 := ImportSavedWeights(savedWeightsFileName)
 
 	testFile, errOs := os.Open(testingFile)
 	if errOs != nil {
@@ -75,7 +75,7 @@ func TestNeuralNet(testingFile string, numTestRecords int, savedWeightsFileName 
 	// fmt.Printf("TestPredictions: 	%v\n", testPredictions)
 }
 
-func importSavedWeights(savedWeightsFileName string) ([][]float64, [][]float64, [][]float64, [][]float64) {
+func ImportSavedWeights(savedWeightsFileName string) ([][]float64, [][]float64, [][]float64, [][]float64) {
 	savedWeightsFile, errSavedWeightsFile := os.Open(savedWeightsFileName)
 	if errSavedWeightsFile != nil {
 		fmt.Printf("errSavedWeightsFile.Error(): %v\n", errSavedWeightsFile.Error())
