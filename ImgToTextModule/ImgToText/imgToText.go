@@ -28,7 +28,7 @@ func convertPageImgToArrayOfBinaryLetters() {
 	}
 
 	reader := bufio.NewReader(imgFile)
-	image, err := png.Decode(reader)
+	colorImage, err := png.Decode(reader)
 	if err != nil {
 		fmt.Printf("Image Reading err.Error(): %v\n", err.Error())
 		panic(err)
@@ -40,9 +40,9 @@ func convertPageImgToArrayOfBinaryLetters() {
 	// 	panic(err)
 	// }
 
-	// fmt.Printf("image.Bounds(): %v\n", image.Bounds())
-	// fmt.Printf("image.Bounds().Max: %v\n", image.Bounds().Max)
-	// fmt.Printf("image.Bounds().Min: %v\n", image.Bounds().Min)
+	fmt.Printf("colorImage.Bounds(): %v\n", colorImage.Bounds())
+	fmt.Printf("colorImage.Bounds().Max: %v\n", colorImage.Bounds().Max)
+	fmt.Printf("colorImage.Bounds().Min: %v\n", colorImage.Bounds().Min)
 
 	// fmt.Printf("image.At(0, 0): %v\n", image.At(0, 0))
 	// fmt.Println(image.At(0, 0).RGBA())
@@ -52,14 +52,25 @@ func convertPageImgToArrayOfBinaryLetters() {
 	// fmt.Println(colors(image.At(0, 0)))
 
 	pageLinesOccurances := []int{}
-	imgBoundMaxX, imgBoundMaxY := image.Bounds().Max.X, image.Bounds().Max.Y
+	imgBoundMaxX, imgBoundMaxY := colorImage.Bounds().Max.X, colorImage.Bounds().Max.Y
+
+	fmt.Printf("imgBoundMaxX: %v\nimgBoundMaxY: %v\n", imgBoundMaxX, imgBoundMaxY)
+
+	image := [][]int{}
+	for y := 0; y < imgBoundMaxY; y++ {
+		imgRow := []int{}
+		for x := 0; x < imgBoundMaxX; x++ {
+			imgRow = append(imgRow, convertToGreyscale(colorImage.At(x, y)))
+		}
+		image = append(image, imgRow)
+	}
+
+	fmt.Printf("image0Len: %v\nimageLen: %v\n", len(image[0]), len(image))
 
 	for y := 0; y < imgBoundMaxY; y++ {
 		pageLinesOccurances = append(pageLinesOccurances, 0)
 		for x := 0; x < imgBoundMaxX; x++ {
-			imageRed, imageGreen, imageBlue := colors(image.At(x, y))
-			if !(imageRed == 255 && imageGreen == 255 && imageBlue == 255) {
-				// if image.At(x, y).RGBA() != color.White.RGBA() {
+			if image[y][x] < 177 {
 				pageLinesOccurances[y] = 1
 				continue
 			}
@@ -102,9 +113,7 @@ func convertPageImgToArrayOfBinaryLetters() {
 		for x := 0; x < imgBoundMaxX; x++ {
 			lineCharacterOccurances = append(lineCharacterOccurances, 0)
 			for y := lineHeightBounds[l][0]; y < lineHeightBounds[l][1]; y++ {
-				// imageRed, imageGreen, imageBlue := colors(image.At(x, y))
-				// if imageRed == 0 && imageGreen == 0 && imageBlue == 0 {
-				if convertToGreyscale(image.At(x, y)) < 177 {
+				if !(255-image[y][x] < 90) {
 					lineCharacterOccurances[x] = 1
 					continue
 				}
@@ -174,11 +183,11 @@ func convertPageImgToArrayOfBinaryLetters() {
 					// _, _, _, a := image.At(x, y).RGBA()
 					// row = append(row, a)
 					// greyValue := convertToBinary(image.At(x, y).RGBA())
-					greyValue := convertToGreyscale(image.At(x, y))
+					greyValue := image[y][x]
 					insertValue := 255 - greyValue
-					if insertValue < 155 {
-						insertValue = 0
-					}
+					// if insertValue < 155 {
+					// 	insertValue = 0
+					// }
 					row = append(row, insertValue)
 
 				}
