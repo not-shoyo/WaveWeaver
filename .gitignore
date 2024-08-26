@@ -3,4 +3,5 @@ ImgToTextModule/ImgData/
 ImgToTextModule/MnistTrainingData/
 ImgToTextModule/NeuralNetOutputs/
 ImgToTextModule/NeuralNetDebugging/
+ImgToTextModule/ImgToTextOutputs/
 TestPackage/

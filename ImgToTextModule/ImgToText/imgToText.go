@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"image/color"
-
-	"github.com/ernyoke/imger/imgio"
-	"github.com/ernyoke/imger/threshold"
+	"image/png"
+	"os"
 )
 
 func main() {
@@ -15,30 +15,30 @@ func main() {
 func convertPageImgToArrayOfBinaryLetters() {
 	path := "ImgData/SamplePdfScreenshot1.png"
 
-	img, err := imgio.ImreadGray(path)
-	if err != nil {
-		fmt.Printf("Could not read image from path: %s", path)
-		panic(err)
-	}
-
-	// imgFile, err := os.Open("ImgData/SamplePdfScreenshot1.png")
+	// img, err := imgio.ImreadGray(path)
 	// if err != nil {
-	// 	fmt.Printf("File Opening err.Error(): %v\n", err.Error())
+	// 	fmt.Printf("Could not read image from path: %s", path)
 	// 	panic(err)
 	// }
 
-	// reader := bufio.NewReader(imgFile)
-	// colorImage, err := png.Decode(reader)
-	// if err != nil {
-	// 	fmt.Printf("Image Reading err.Error(): %v\n", err.Error())
-	// 	panic(err)
-	// }
-
-	image, err := threshold.OtsuThreshold(img, threshold.ThreshBinary)
+	imgFile, err := os.Open(path)
 	if err != nil {
-		fmt.Printf("Otsu Binarized Conversion err.Error(): %v\n", err.Error())
+		fmt.Printf("File Opening err.Error(): %v\n", err.Error())
 		panic(err)
 	}
+
+	reader := bufio.NewReader(imgFile)
+	image, err := png.Decode(reader)
+	if err != nil {
+		fmt.Printf("Image Reading err.Error(): %v\n", err.Error())
+		panic(err)
+	}
+
+	// image, err := threshold.OtsuThreshold(img, threshold.ThreshBinary)
+	// if err != nil {
+	// 	fmt.Printf("Otsu Binarized Conversion err.Error(): %v\n", err.Error())
+	// 	panic(err)
+	// }
 
 	// fmt.Printf("image.Bounds(): %v\n", image.Bounds())
 	// fmt.Printf("image.Bounds().Max: %v\n", image.Bounds().Max)
@@ -102,8 +102,9 @@ func convertPageImgToArrayOfBinaryLetters() {
 		for x := 0; x < imgBoundMaxX; x++ {
 			lineCharacterOccurances = append(lineCharacterOccurances, 0)
 			for y := lineHeightBounds[l][0]; y < lineHeightBounds[l][1]; y++ {
-				imageRed, imageGreen, imageBlue := colors(image.At(x, y))
-				if imageRed == 0 && imageGreen == 0 && imageBlue == 0 {
+				// imageRed, imageGreen, imageBlue := colors(image.At(x, y))
+				// if imageRed == 0 && imageGreen == 0 && imageBlue == 0 {
+				if convertToGreyscale(image.At(x, y)) < 177 {
 					lineCharacterOccurances[x] = 1
 					continue
 				}
@@ -172,7 +173,13 @@ func convertPageImgToArrayOfBinaryLetters() {
 				for x := pageCharWidthBounds[i][j][0]; x < pageCharWidthBounds[i][j][1]; x++ {
 					// _, _, _, a := image.At(x, y).RGBA()
 					// row = append(row, a)
-					row = append(row, convertToBinary(image.At(x, y).RGBA()))
+					// greyValue := convertToBinary(image.At(x, y).RGBA())
+					greyValue := convertToGreyscale(image.At(x, y))
+					insertValue := 255 - greyValue
+					if insertValue < 155 {
+						insertValue = 0
+					}
+					row = append(row, insertValue)
 
 				}
 				letter = append(letter, row)
@@ -187,9 +194,23 @@ func convertPageImgToArrayOfBinaryLetters() {
 
 	fmt.Printf("pageContent[:50]: %v\n", pageContent[:50])
 
+	printCombinedLetterStrings(singleLetters, 0, 50)
+
 	// printLetter(singleLetters, 0)
 	// printLetter(singleLetters, 1)
-	printLetter(singleLetters, 5)
+	// printLetter(singleLetters, 2)
+	// printLetter(singleLetters, 3)
+	// printLetter(singleLetters, 4)
+	// printLetter(singleLetters, 5)
+	// printLetter(singleLetters, 6)
+	// printLetter(singleLetters, 7)
+	// printLetter(singleLetters, 8)
+	// printLetter(singleLetters, 9)
+	// printLetter(singleLetters, 10)
+	// printLetter(singleLetters, 11)
+	// printLetter(singleLetters, 12)
+	// printLetter(singleLetters, 13)
+
 	// printLetter(singleLetters, 19)
 	// printLetter(singleLetters, 20)
 	// printLetter(singleLetters, 21)
@@ -215,13 +236,74 @@ func convertPageImgToArrayOfBinaryLetters() {
 	// }
 }
 
+func printCombinedLetterStrings(singleLetters [][][]int, start, end int) {
+	numLetters := len(singleLetters)
+	constructedStrings := []string{}
+	for i := 0; i < numLetters && i >= start && i < end; i++ {
+		for k, row := range singleLetters[i] {
+			for _, c := range row {
+				numString := fmt.Sprintf("%v", c)
+				lengthNumber := len(numString)
+				switch lengthNumber {
+				case 1:
+					numString = fmt.Sprintf("%v   ", numString)
+					// fmt.Print(numString)
+					if k >= len(constructedStrings) {
+						constructedStrings = append(constructedStrings, numString)
+					} else {
+						constructedStrings[k] = constructedStrings[k] + numString
+					}
+				case 2:
+					numString = fmt.Sprintf("%v  ", numString)
+					// fmt.Print(numString)
+					if k >= len(constructedStrings) {
+						constructedStrings = append(constructedStrings, numString)
+					} else {
+						constructedStrings[k] = constructedStrings[k] + numString
+					}
+				case 3:
+					numString = fmt.Sprintf("%v ", numString)
+					// fmt.Print(numString)
+					if k >= len(constructedStrings) {
+						constructedStrings = append(constructedStrings, numString)
+					} else {
+						constructedStrings[k] = constructedStrings[k] + numString
+					}
+				default:
+					fmt.Printf("%v|", numString)
+				}
+			}
+			constructedStrings[k] = constructedStrings[k] + "     "
+		}
+	}
+
+	for _, stringLetters := range constructedStrings {
+		fmt.Printf("%v\n", stringLetters)
+	}
+
+}
+
 func printLetter(singleLetters [][][]int, letterNum int) {
 	fmt.Printf("singleLetters[%v]: \n", letterNum)
 	for _, row := range singleLetters[letterNum] {
 		for _, c := range row {
-			print(c)
+			numString := fmt.Sprintf("%v", c)
+			lengthNumber := len(numString)
+			switch lengthNumber {
+			case 1:
+				numString = fmt.Sprintf("%v   ", numString)
+				fmt.Print(numString)
+			case 2:
+				numString = fmt.Sprintf("%v  ", numString)
+				fmt.Print(numString)
+			case 3:
+				numString = fmt.Sprintf("%v ", numString)
+				fmt.Print(numString)
+			default:
+				fmt.Printf("%v|", numString)
+			}
 		}
-		println()
+		fmt.Println()
 	}
 }
 
@@ -234,6 +316,13 @@ func convertToBinary(r, g, b, _ uint32) int {
 		return 1
 	}
 	return 0
+}
+
+func convertToGreyscale(color color.Color) int {
+	r, g, b, _ := color.RGBA()
+	lum := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
+	// lum := (r + g + b) / 3
+	return int(lum / 256)
 }
 
 func colors(alphaMultipliedColor color.Color) (uint32, uint32, uint32) {
