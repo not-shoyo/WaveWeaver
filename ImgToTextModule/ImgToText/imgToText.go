@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 )
 
@@ -203,8 +204,44 @@ func convertPageImgToArrayOfBinaryLetters() {
 
 	fmt.Printf("pageContent[:50]: %v\n", pageContent[:50])
 
+	splitUpOfLetterLengths := calcSplitUpOfLetterLengths(singleLetters)
+
+	fmt.Println(splitUpOfLetterLengths)
+
+	maxOccur := math.MinInt
+	maxOccurLen := -1
+	for letterLen, occurrences := range splitUpOfLetterLengths {
+		// fmt.Printf("letterLen - occurrences: %v - %v\n", letterLen, occurrences)
+		if occurrences > maxOccur {
+			maxOccur = occurrences
+			maxOccurLen = letterLen
+		}
+	}
+
+	fmt.Printf("maxOccurLen: %v\n", maxOccurLen)
+
+	fmt.Printf("So we know, if a \"letter\" has more than 2*maxOccurLen-1 (%v) length, it needs to be split by maxOccurLen\n", 2*maxOccurLen-1)
+
+	newSplitUpSingleLetters := [][][]int{}
+	for _, letter := range singleLetters {
+		if len(letter[0]) < 2*maxOccurLen-2 {
+			newSplitUpSingleLetters = append(newSplitUpSingleLetters, letter)
+			continue
+		}
+
+		splitParts := splitApparentLetter(letter, maxOccurLen)
+		// printCombinedLetterStrings(splitParts, 0, len(splitParts))
+
+		newSplitUpSingleLetters = append(newSplitUpSingleLetters, splitParts...)
+
+		// for _, splitLetter := range splitParts {
+		// 	newSplitUpSingleLetters = append(newSplitUpSingleLetters, splitLetter)
+		// }
+	}
+
 	printCombinedLetterStrings(singleLetters, 0, 50)
 
+	printCombinedLetterStrings(newSplitUpSingleLetters, 0, 50)
 	// printLetter(singleLetters, 0)
 	// printLetter(singleLetters, 1)
 	// printLetter(singleLetters, 2)
@@ -243,6 +280,55 @@ func convertPageImgToArrayOfBinaryLetters() {
 	// 	}
 	// 	println()
 	// }
+}
+
+func splitApparentLetter(letter [][]int, splitLen int) [][][]int {
+	splitParts := [][][]int{}
+
+	ogHeight := len(letter)
+	ogLen := len(letter[0])
+
+	for i := 0; i < ogLen/splitLen; i++ {
+		singleSplitLetter := [][]int{}
+		for r := 0; r < ogHeight; r++ {
+			splitLetterRow := []int{}
+			for c := 0; c < splitLen && i*splitLen+c < ogLen; c++ {
+				splitLetterRow = append(splitLetterRow, letter[r][i*splitLen+c])
+			}
+			singleSplitLetter = append(singleSplitLetter, splitLetterRow)
+		}
+		splitParts = append(splitParts, singleSplitLetter)
+	}
+
+	if ogLen%splitLen == 0 {
+		return splitParts
+	}
+
+	singleSplitLetter := [][]int{}
+	for r := 0; r < ogHeight; r++ {
+		splitLetterRow := []int{}
+		for c := 0; c < splitLen && c < ogLen%splitLen; c++ {
+			splitLetterRow = append(splitLetterRow, letter[r][(ogLen/splitLen)*splitLen+c])
+		}
+		singleSplitLetter = append(singleSplitLetter, splitLetterRow)
+	}
+	splitParts = append(splitParts, singleSplitLetter)
+
+	return splitParts
+}
+
+func calcSplitUpOfLetterLengths(singleLetters [][][]int) map[int]int {
+	returnMap := map[int]int{}
+	for _, letter := range singleLetters {
+		letterLen := len(letter[0])
+		numLetters, ok := returnMap[letterLen]
+		if ok {
+			returnMap[letterLen] = numLetters + 1
+		} else {
+			returnMap[letterLen] = 1
+		}
+	}
+	return returnMap
 }
 
 func printCombinedLetterStrings(singleLetters [][][]int, start, end int) {
